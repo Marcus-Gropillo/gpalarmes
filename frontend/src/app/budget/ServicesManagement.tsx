@@ -81,12 +81,16 @@ const ServicesManagement = () => {
     setSelectedServices(prev => {
       const existingService = prev.find(s => s.id === serviceId);
       if (existingService) {
-        return prev.map(s => s.id === serviceId ? { ...s, quantity: quantityNumber } : s);
+        const updatedServices = prev.map(s => s.id === serviceId ? { ...s, quantity: quantityNumber } : s);
+        calculateTotal(); // Atualiza o total após a modificação
+        return updatedServices;
       } else {
-        return [...prev, { id: serviceId, quantity: quantityNumber }];
+        const newService = { id: serviceId, quantity: quantityNumber };
+        const updatedServices = [...prev, newService];
+        calculateTotal(); // Atualiza o total após a adição
+        return updatedServices;
       }
     });
-    calculateTotal();
   };
 
   const handleBudgetCreation = async () => {
@@ -108,94 +112,90 @@ const ServicesManagement = () => {
     setIsSubmitting(true); 
 
     try {
-        const response = await axios.post('http://192.168.1.13:3000/api/budgets', {
-            id: budgetId, 
-            total,
-            services: selectedServices,
-          });
-          Alert.alert('Sucesso', 'Orçamento criado com sucesso!');
+      const response = await axios.post('http://192.168.1.13:3000/api/budgets', {
+        id: budgetId, 
+        total,
+        services: selectedServices,
+      });
 
-          await AsyncStorage.setItem('@budget_id', String(budgetId + 1));
-    
-          setBudgetId(prevId => prevId + 1);
+      if (response.status === 201) {
+        Alert.alert('Sucesso', 'Orçamento criado com sucesso!');
+        
+        // Salvar o orçamento no Async Storage
+        const budgetData = {
+          id: budgetId,
+          total,
+          services: selectedServices };
 
-          setSelectedServices([]);
-          setTotal(0);
-        } catch (error) {
-          console.error('Erro ao criar orçamento:', error);
-          Alert.alert('Erro', 'Não foi possível criar o orçamento.');
-        } finally {
-          setIsSubmitting(false);
+        await AsyncStorage.setItem(`budget_${budgetId}`, JSON.stringify(budgetData));
+
+        // Verificar se o orçamento foi salvo corretamente
+        const savedBudget = await AsyncStorage.getItem(`budget_${budgetId}`);
+        if (savedBudget) {
+          console.log('Orçamento salvo com sucesso:', JSON.parse(savedBudget));
+        } else {
+          console.error('Falha ao salvar o orçamento.');
         }
-      };
-    
-      return (
-        <ScrollView style={styles.container}>
-          <Text style={styles.title}>Gerenciamento de Serviços</Text>
-          
-          {services.map(service => (
-            <View key={service.id} style={styles.serviceItem}>
-              <Text>{service.description}</Text>
-              <Text>R$ {service.basePrice.toFixed(2)}</Text>
-              <TextInput
-                placeholder="Quantidade"
-                keyboardType="numeric"
-                onChangeText={(text) => handleServiceQuantityChange(service.id, text)}
-              />
-            </View>
-          ))}
-    
-          <View style={styles.marginContainer}>
-            <Text>Taxa de Imposto (%):</Text>
-            <TextInput
-              keyboardType="numeric"
-              value={String(taxRate * 100)}
-              onChangeText={(text) => setTaxRate(parseFloat(text) / 100)}
-            />
-          </View>
-    
-          <View style={styles.marginContainer}>
-            <Text>Margem (%):</Text>
-            <TextInput
-              keyboardType="numeric"
-              value={String(marginRate * 100)}
-              onChangeText={(text) => setMarginRate(parseFloat(text) / 100)}
-            />
-          </View>
-    
-          <Text style={styles.total}>Total: R$ {total.toFixed(2)}</Text>
-    
-          <Button title="Criar Orçamento" onPress={handleBudgetCreation} disabled={isSubmitting} />
-        </ScrollView>
-      );
-    };
-    
-    const styles = StyleSheet.create({
-      container: {
-        flex: 1,
-        padding: 16,
-        backgroundColor: '#f9f9f9',
-      },
-      title: {
-        fontSize: 24,
-        fontWeight: 'bold',
-        marginBottom: 20,
-      },
-      serviceItem: {
-        padding: 10,
-        borderColor: 'gray',
-        borderWidth: 1,
-        borderRadius: 5,
-        marginBottom: 10,
-      },
-      marginContainer: {
-        marginVertical: 10,
-      },
-      total: {
-        fontSize: 20,
-        fontWeight: 'bold',
-        marginTop: 20,
-      },
-    });
-    
-    export default ServicesManagement;
+
+        setSelectedServices([]);
+        setTotal(0);
+      } else {
+        Alert.alert('Erro', 'Falha ao criar orçamento. Tente novamente.');
+      }
+    } catch (error) {
+      Alert.alert('Erro', 'Ocorreu um erro ao criar o orçamento. Verifique sua conexão e tente novamente.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  useEffect(() => {
+    calculateTotal();
+  }, [selectedServices, taxRate, marginRate]);
+
+  return (
+    <ScrollView style={styles.container}>
+      <Text style={styles.title}>Gerenciamento de Serviços</Text>
+      {services.map(service => (
+        <View key={service.id} style={styles.serviceContainer}>
+          <Text>{service.description} - R$ {service.basePrice.toFixed(2)}</Text>
+          <TextInput
+            style={styles.input}
+            placeholder="Quantidade"
+            keyboardType="numeric"
+            onChangeText={quantity => handleServiceQuantityChange(service.id, quantity)}
+          />
+        </View>
+      ))}
+      <Text style={styles.total}>Total: R$ {total.toFixed(2)}</Text>
+      <Button title="Criar Orçamento" onPress={handleBudgetCreation} disabled={isSubmitting} />
+    </ScrollView>
+  );
+};
+
+const styles = StyleSheet.create({
+  container: {
+    padding: 20,
+  },
+  title: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    marginBottom: 20,
+  },
+  serviceContainer: {
+    marginBottom: 15,
+  },
+  input: {
+    borderWidth: 1,
+    borderColor: '#ccc',
+    padding: 10,
+    marginTop: 5,
+  },
+  total: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    marginTop: 20,
+  },
+});
+
+export default ServicesManagement;

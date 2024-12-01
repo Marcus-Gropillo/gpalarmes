@@ -1,34 +1,34 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, Button, StyleSheet, Alert } from 'react-native';
-import axios from 'axios';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
-interface OpenBudgetProps {
-  onBudgetCreated: () => void; 
-}
-
-const OpenBudget: React.FC<OpenBudgetProps> = ({ onBudgetCreated }) => {
+const BudgetManagement = () => {
   const [description, setDescription] = useState('');
   const [value, setValue] = useState('');
 
   const handleCreateBudget = async () => {
     if (!description || !value) {
-      Alert.alert('Erro', 'Por favor, preencha todos os campos.');
+      Alert.alert('Erro', 'Descrição e valor são obrigatórios.');
       return;
     }
 
-    try {
-      const response = await axios.post('http://192.168.1.13:3000/api/budgets', {
-        description,
-        value: parseFloat(value), 
-      });
+    const budgetData = {
+      description,
+      value: parseFloat(value),
+    };
 
+    try {
+      const existingBudgets = await AsyncStorage.getItem('@budgets_data');
+      const allBudgets = existingBudgets ? JSON.parse(existingBudgets) : [];
+      allBudgets.push(budgetData);
+      await AsyncStorage.setItem('@budgets_data', JSON.stringify(allBudgets));
       Alert.alert('Sucesso', 'Orçamento criado com sucesso!');
-      onBudgetCreated(); 
+
       setDescription('');
       setValue('');
     } catch (error) {
-      console.error('Erro ao criar orçamento:', error);
-      Alert.alert('Erro', 'Não foi possível criar o orçamento.');
+      console.error('Erro ao armazenar orçamento:', error);
+      Alert.alert('Erro', 'Erro ao armazenar orçamento.');
     }
   };
 
@@ -55,11 +55,12 @@ const OpenBudget: React.FC<OpenBudgetProps> = ({ onBudgetCreated }) => {
 
 const styles = StyleSheet.create({
   container: {
-    marginTop: 20,
-    padding: 10,
-    borderColor: 'gray',
-    borderWidth: 1,
+    padding: 16,
+    backgroundColor: '#f9f9f9',
     borderRadius: 5,
+    borderWidth: 1,
+    borderColor: 'gray',
+    marginVertical: 10,
   },
   input: {
     height: 40,
@@ -70,4 +71,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default OpenBudget;
+export default BudgetManagement;

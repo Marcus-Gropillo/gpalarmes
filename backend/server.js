@@ -1,11 +1,19 @@
 const express = require('express');
+const cors = require('cors'); 
 const app = express();
+
+const corsOptions = {
+  origin: 'http://localhost:8081',
+  methods: ['GET', 'POST', 'PUT', 'DELETE'],
+  allowedHeaders: ['Content-Type'], 
+};
+
+app.use(cors(corsOptions)); 
 app.use(express.json());
 
-let budgets = []; // Array para armazenar orçamentos
-let companies = []; // Array para armazenar empresas
+let budgets = []; 
+let companies = []; 
 
-// **Endpoint para criar um novo orçamento**
 app.post('/api/budgets', (req, res) => {
   const { description, value } = req.body;
   if (!description || !value) {
@@ -13,7 +21,7 @@ app.post('/api/budgets', (req, res) => {
   }
 
   const newBudget = {
-    id: budgets.length + 1, // Exemplo de ID
+    id: budgets.length + 1, 
     description,
     value,
   };
@@ -22,12 +30,10 @@ app.post('/api/budgets', (req, res) => {
   res.status(201).json(newBudget);
 });
 
-// **Endpoint para obter todos os orçamentos**
 app.get('/api/budgets', (req, res) => {
   res.json(budgets);
 });
 
-// **Endpoint para atualizar um orçamento**
 app.put('/api/budgets/:id', (req, res) => {
   const { id } = req.params;
   const { description, value } = req.body;
@@ -44,10 +50,9 @@ app.put('/api/budgets/:id', (req, res) => {
     budget.value = value;
   }
 
-  res.json(budget); // Retorna o orçamento atualizado
+  res.json(budget); 
 });
 
-// **Endpoint para deletar um orçamento**
 app.delete('/api/budgets/:id', (req, res) => {
   const { id } = req.params;
   const budgetIndex = budgets.findIndex(b => b.id === parseInt(id));
@@ -59,7 +64,6 @@ app.delete('/api/budgets/:id', (req, res) => {
   res.status(204).send();
 });
 
-// **Endpoint para cadastrar uma nova empresa**
 app.post('/api/companies', (req, res) => {
   const { companyName, responsibleName, address, phone, email, cnpj } = req.body;
   if (!companyName || !responsibleName || !address || !phone || !email || !cnpj) {
@@ -80,12 +84,10 @@ app.post('/api/companies', (req, res) => {
   res.status(201).json(newCompany);
 });
 
-// **Endpoint para obter todas as empresas**
 app.get('/api/companies', (req, res) => {
   res.json(companies);
 });
 
-// **Inicie o servidor**
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`Servidor rodando na porta ${PORT}`);

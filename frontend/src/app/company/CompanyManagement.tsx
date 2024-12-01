@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { View, Text, Button, TextInput, StyleSheet, Alert } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-const UserManagement = () => {
+const CompanyManagement = () => {
   const [isRegistrationVisible, setRegistrationVisible] = useState(false);
   const [companyName, setCompanyName] = useState('');
   const [responsibleName, setResponsibleName] = useState('');
@@ -164,4 +164,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default UserManagement;
+export default CompanyManagement;
